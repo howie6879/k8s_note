@@ -81,7 +81,7 @@ kubectl exec -it nginx-deployment-585449566-qslv5 -- /bin/bash
 
 ## Pod
 
-> 在Kubernetes中，最小的管理元素不是一个个独立的容器，而是pod。
+> 在Kubernetes中，最小的管理元素不是一个个独立的容器，而是pod（目的在于解决容器间**紧密协作**关系的难题）
 
 ![Kubernetes教程：Pod概念](https://gitee.com/howie6879/oss/raw/master/uPic/module_03_pods.ccc5ba54.svg)
 
@@ -92,7 +92,9 @@ kubectl exec -it nginx-deployment-585449566-qslv5 -- /bin/bash
   - 容器（container）的一些共享资源：存储、网络等
 - 一个`Pod`的所有容器都运行在同一个节点
 
-容器可以被管理，但是容器里面的多个进程实际上是不好被管理的，所以**容器被设计为每个容器只运行一个进程**，由于这个原因，我们需要另一种更高级的结构来将容器绑定在一起，并将它们作为一个单元进行管理，这就是`Pod`出现的目的。
+容器可以被管理，但是容器里面的多个进程实际上是不好被管理的，所以**容器被设计为每个容器只运行一个进程**。
+
+容器的本质实际上就是一个进程，**Namespace 做隔离，Cgroups 做限制，rootfs 做文件系统**。在一个容器只能运行一个进程的前提下，实际开发过程中一个应用是由多个容器紧密协作才可以成功地运行起来。因此，我们需要另一种更高级的结构来将容器绑定在一起，并将它们作为一个单元进行管理，这就是`Pod`出现的目的。
 
 ### 如何定义并创建一个Pod
 
@@ -148,44 +150,13 @@ kubectl get po nginx -o yaml
 kubectl delete -f nginx-pod.yaml
 ```
 
-### 外部访问
+这里简单介绍了用声明式API怎么创建`Pod`，但从技术角度看，`Pod`又是怎样被创建的呢？实际上`Pod`只是一个逻辑概念，`Pod`里的所有容器，共享的是同一个`Network Namespace`，并且可以声明共享同一个`Volume`。
 
-此时我们已经启动了一个`nginx`，我们有哪些方法可以对`Pod`进行连接测试呢？
+`Pod`除了启动你定义的容器，还会启动一个`Infra`容器，这个容器使用的就是`k8s.gcr.io/pause`镜像，它的作用就是整一个`Network Namespace`方便用户容器加入，这就意味着`Pod`有以下特性：
 
-可以使用如下命令：
-
-```shell
-kubectl port-forward nginx 8088:80
-# 输出
-Forwarding from 127.0.0.1:8088 -> 80
-Forwarding from [::1]:8088 -> 80
-
-# 再开一个终端访问测试或者打开浏览器
-curl http://0.0.0.0:8088/
-```
-
-![image-20210105230002954](https://gitee.com/howie6879/oss/raw/master/uPic/image-20210105230002954.png)
-
-显然，成功访问，但是这个有个问题就是此端口不会长期开放，一旦一定时间内没有访问，就会自动断掉，我们需要其他的方式来进行访问。比如后面会提到的`Service`，这里就简单运行个命令，大家感受一下：
-
-```shell
-# 创建一个服务对象
-# NodePort 在所有节点（虚拟机）上开放一个特定端口，任何发送到该端口的流量都被转发到对应服务
-kubectl expose po nginx --port=80 --target-port=80 --type=NodePort  --name nginx-http
-# 输出
-service/nginx-http exposed
-
-# 查看服务
-kubectl get svc
-# 输出
-NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
-kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP        16d
-nginx-http   NodePort    10.102.141.232   <none>        80:32220/TCP   1s
-
-# 终端访问测试
-curl http://0.0.0.0:32220/
-# 输出 html, 表示成功端口成功开放给外部
-```
+- 内部直接使用`127.0.0.1`通信，网络设备一致（`Infra`容器决定）
+- 只有一个IP地址
+- `Pod`的生命周期只跟`Infra`容器一致，而与用户容器无关
 
 ### 标签
 
@@ -258,50 +229,50 @@ kubectl create -f nginx-pod.yaml -n cus-ns
 - 手动增删改查`Pod`
 - 让其服务化（`Service`）
 
-但是在实际使用中，我们并不会直接人工干预来管理`Pod`，为什么呢？当`Pod`健康出问题，人是没有精力来做这种维护管理工作的，但我们擅长创造工具来自动化这些繁琐的事情。
+但是在实际使用中，我们并不会直接人工干预来管理`Pod`，为什么呢？当`Pod`健康出问题或者需要进行更新等操作时，人是没有精力来做这种维护管理工作的，但我们擅长创造工具来自动化这些繁琐的事情，所以我们可以使用后面介绍的`Deployment`。
 
-所以我们可以使用`Deployment`。
+### 外部访问
 
-## Deployment
+此时我们已经启动了一个`nginx`，我们有哪些方法可以对`Pod`进行连接测试呢？
 
-窥一斑而知全豹，好好了解完`Pod`之后，再继续了解`k8s`的概念也就水到渠成了。我们一般不会直接创建`Pod`，毕竟通过创建`Deployment`资源可以很方便的创建管理`Pod`，并支持声明式地更新应用程序。
-
-本章第一小节**引入**部分就是以`Deployment`举例，当时启动配置文件我们看到了一个`Deployment`资源和一个`Pod`，查看命令如下：
+可以使用如下命令：
 
 ```shell
-kubectl get deployments
+kubectl port-forward nginx 8088:80
 # 输出
-NAME               READY   UP-TO-DATE   AVAILABLE   AGE
-nginx-deployment   0/1     1            0           4s
+Forwarding from 127.0.0.1:8088 -> 80
+Forwarding from [::1]:8088 -> 80
 
-kubectl get pods
-# 输出 如果名字有变化不用在意，只是我重新创建了一个 Deployment 
-NAME                               READY   STATUS    RESTARTS   AGE
-nginx-deployment-585449566-mnrtn   1/1     Running   0          2m1s
+# 再开一个终端访问测试或者打开浏览器
+curl http://0.0.0.0:8088/
 ```
 
-这里我们再增加一条命令：
+![image-20210105230002954](https://gitee.com/howie6879/oss/raw/master/uPic/image-20210105230002954.png)
+
+显然，成功访问，但是这个有个问题就是此端口不会长期开放，一旦一定时间内没有访问，就会自动断掉，我们需要其他的方式来进行访问，比如后面会提到的`Service`，这里就简单运行个命令，大家感受一下：
 
 ```shell
-kubectl get replicasets.apps
+# 创建一个服务对象
+# NodePort 在所有节点（虚拟机）上开放一个特定端口，任何发送到该端口的流量都被转发到对应服务
+kubectl expose po nginx --port=80 --target-port=80 --type=NodePort  --name nginx-http
 # 输出
-NAME                         DESIRED   CURRENT   READY   AGE
-nginx-deployment-585449566   1         1         1       10m
+service/nginx-http exposed
+
+# 查看服务
+kubectl get svc
+# 输出
+NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP        16d
+nginx-http   NodePort    10.102.141.232   <none>        80:32220/TCP   1s
+
+# 终端访问测试
+curl http://0.0.0.0:32220/
+# 输出 html, 表示成功端口成功开放给外部
 ```
-
-嗯嗯~，让我们捋一捋，当我们创建一个`Deployment`对象时，`k8s`不会只创建一个`Deployment`资源，还会创建另外的`ReplicaSet `以及1个`Pod `对象。
-
-所以问题来了， `ReplicaSet`又是个是什么东西？说到`ReplicaSet`就得说到`ReplicationController`（弃用）。
-
-> `ReplicationController`是一种`k8s`资源，其会持续监控正在运行的pod列表，从而保证`Pod`的稳定（在现有`Pod`丢失时启动一个新`Pod`），也能轻松实现`Pod`的水平伸缩。
->
-> `ReplicaSet`的行为与`ReplicationController`完全相同，但Pod选择器的表达能力更强。
-
-所以我们可以将`Deployment`当成一种更高阶的资源，用于部署应用程序，并以声明的方式管理应用，而不是通过`ReplicaSet`进行部署，上述命令的创建关系如下图：
-
-![image-20210110174652178](https://gitee.com/howie6879/oss/raw/master/uPic/image-20210110174652178.png)
 
 ## Service
+
+> Service 服务的主要作用就是替代 Pod 对外暴露一个不变的访问地址
 
 在本文第二节`Pod`部分的`外部访问`小节，就已经提到并演示了`Service`，它很方便地将我们的服务端口成功开放给外部访问。
 
@@ -372,7 +343,69 @@ curl http://0.0.0.0:30068/
 
 而`Ingress`非常强大，它位于多个服务之前，充当集群中的**智能路由器**或入口点：
 
-![4.png](https://gitee.com/howie6879/oss/raw/master/uPic/ab886a9dd4e912cf6f5a1f3ed983ac4c.png)
+![Ingress.png](https://gitee.com/howie6879/oss/raw/master/uPic/ab886a9dd4e912cf6f5a1f3ed983ac4c.png)
+
+## Deployment
+
+窥一斑而知全豹，好好了解完`Pod`之后，再继续了解`k8s`的概念也就水到渠成了。我们一般不会直接创建`Pod`，毕竟通过创建`Deployment`资源可以很方便的创建管理`Pod`（水平扩展、伸缩），并支持声明式地更新应用程序。
+
+### 介绍
+
+本章第一小节**引入**部分就是以`Deployment`举例，当时启动配置文件我们看到了一个`Deployment`资源和一个`Pod`，查看命令如下：
+
+```shell
+kubectl get deployments
+# 输出
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   0/1     1            0           4s
+
+kubectl get pods
+# 输出 如果名字有变化不用在意，只是我重新创建了一个 Deployment 
+NAME                               READY   STATUS    RESTARTS   AGE
+nginx-deployment-585449566-mnrtn   1/1     Running   0          2m1s
+```
+
+这里我们再增加一条命令：
+
+```shell
+kubectl get replicasets.apps
+# 输出
+NAME                         DESIRED   CURRENT   READY   AGE
+nginx-deployment-585449566   1         1         1       10m
+```
+
+嗯嗯~，让我们捋一捋，当我们创建一个`Deployment`对象时，`k8s`不会只创建一个`Deployment`资源，还会创建另外的`ReplicaSet `以及1个`Pod `对象。所以问题来了， `ReplicaSet`又是个是什么东西？
+
+### ReplicaSet
+
+如果你更新了`Deployment`的`Pod`模板，那么`Deployment`就需要通过滚动更新（rolling update）的方式进行更新。
+
+而滚动更新，离不开`ReplicaSet`，说到`ReplicaSet`就得说到`ReplicationController`（弃用）。
+
+> `ReplicationController`是一种`k8s`资源，其会持续监控正在运行的pod列表，从而保证`Pod`的稳定（在现有`Pod`丢失时启动一个新`Pod`），也能轻松实现`Pod`的水平伸缩
+
+`ReplicaSet`的行为与`ReplicationController`完全相同，但`Pod`选择器的表达能力更强（允许匹配缺少某个标签的Pod，或包含特定标签名的Pod）。所以我们可以将`Deployment`当成一种更高阶的资源，用于部署应用程序，并以声明的方式管理应用，而不是通过`ReplicaSet`进行部署，上述命令的创建关系如下图：
+
+![image-20210110174652178](https://gitee.com/howie6879/oss/raw/master/uPic/image-20210110174652178.png)
+
+如上图，`Deployment`的控制器，实际上控制的是`ReplicaSet`的数目，以及每个`ReplicaSet`的属性。我们可以说`Deployment`是一个两层控制器：
+
+> Deployment-->ReplicaSet-->Pod
+
+这种形式下滚动更新是极好的，但这里有个前提条件那就是`Pod`是无状态的，如果运行的容器必须依赖此时的相关运行数据，那么回滚后这些存在于容器的数据或者一些相关运行状态值就不存在了，对于这种情况，该怎么办？此时需要的就是`StatefulSet`（部署有状态的多副本应用）。
+
+## StatefulSet
+
+如果通过`ReplicaSet`创建多个`Pod`副本（其中描述了关联到特定持久卷声明的数据卷），那么这些副本都将共享这个持久卷声明的数据卷。
+
+![img](https://gitee.com/howie6879/oss/raw/master/uPic/CB_3NC5VK5SeDyX6Np6Ln_00500.jpeg)
+
+那如何运行一个pod的多个副本，让每个pod都有独立的存储卷呢？对于这个问题，之前学习的相关知识都不能提供比较好的解决方案。`k8s`提供了`Statefulset`资源来运行这类Pod，它是专门定制的一类应用，这类应用中每一个实例都是不可替代的个体，都拥有稳定的名字和状态。
+
+对于有状态的应用（实例之间有不对等的关系或者依赖外部数据），主要需要对以下两种类型的状态进行复刻：
+
+- 存储状态：应用的多个实例分别绑定了不同的存储数据，也就是让每个Pod都有自己独立的存储卷
+- 拓扑状态：应用的多个实例之间不是完全对等的关系，各个Pod需要按照一定的顺序启动
 
 
 
@@ -384,5 +417,5 @@ curl http://0.0.0.0:30068/
 - [详解 Kubernetes Deployment 的实现原理](https://draveness.me/kubernetes-deployment/)
 - [Kubernetes 中文指南](https://jimmysong.io/kubernetes-handbook/concepts/deployment.html)：Deployment
 - [Kubernetes 中文指南](https://jimmysong.io/kubernetes-handbook/concepts/service.html)：Service 
+- [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201?code=UhApqgxa4VLIA591OKMTemuH1%2FWyLNNiHZ2CRYYdZzY%3D)：容器编排部分
 - Kubernetes in Action中文版：第3、4、5、9章
-

@@ -1,4 +1,4 @@
-# 安装
+# 走进Kubernetes
 
 ## 什么是Kubernetes
 
@@ -9,6 +9,25 @@
 - **自动发布和回滚**
 - **自愈**
 - **密钥及配置管理**
+
+通过下面架构图可以看到其有上下两部分对应的`Master&Node`节点构成，这两种角色分别对应着控制节点和计算节点。
+
+![全局架构](https://gitee.com/howie6879/oss/raw/master/uPic/8ee9f2fa987eccb490cfaa91c6484f67.png)
+
+> Master控制节点主要出发点在于如何编排、管理、调度用户提交的作业
+
+Kubernetes控制节点主要由以下几个核心组件组成：
+
+- etcd保存了整个集群的状态
+- apiserver提供了资源操作的唯一入口，并提供认证、授权、访问控制、API注册和发现等机制
+- controller manager负责维护集群的状态，比如故障检测、自动扩展、滚动更新等
+- scheduler负责资源的调度，按照预定的调度策略将Pod调度到相应的机器上
+
+对于计算节点：
+
+- kubelet负责维护容器的生命周期，同时也负责Volume（CSI）和网络（CNI）的管理
+- Container runtime负责镜像管理以及Pod和容器的真正运行（CRI）
+- kube-proxy负责为Service提供cluster内部的服务发现和负载均衡
 
 ## 安装
 
@@ -368,5 +387,6 @@ kubectl get services
 
 - [使用kubeadm安装kubernetes_v1.19.x](https://kuboard.cn/install/install-k8s.html#%E6%A3%80%E6%9F%A5-centos-hostname)
 - [Web基础配置篇（十六）: Kubernetes集群的安装使用](https://www.pomit.cn/p/2366402025269761#1010602)
+- [Kubernetes架构](https://jimmysong.io/kubernetes-handbook/concepts/)
+- [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201?code=UhApqgxa4VLIA591OKMTemuH1%2FWyLNNiHZ2CRYYdZzY%3D)：入门篇以及集群搭建部分
 - Kubernetes in Action中文版：第1、2章
-
