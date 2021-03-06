@@ -8,5 +8,5 @@ spec:
   accessModes:
     - ReadWriteMany
   nfs:
-    server: 192.168.5.67
-    path: "/volume1/data/dc-ml-model-manager-inner/test_data/"
+    server: 1.2.3.4
+    path: /data
