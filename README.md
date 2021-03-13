@@ -26,10 +26,14 @@
 - 附录
   - [00.设计模式——基于容器的分布式系统](./03.附录.k8s学习之路/00.设计模式——基于容器的分布式系统.md)
 
-## 资料
+## 关于
 
 笔记主要来源于对以下书籍的学习，更详细的引用在文章里面：
 
 - [深入剖析Kubernetes](https://time.geekbang.org/column/intro/100015201?code=UhApqgxa4VLIA591OKMTemuH1%2FWyLNNiHZ2CRYYdZzY%3D)：极客时间的课程，个人觉得讲得极好，很深刻，作者站在了很高的角度和你讲解`k8s`
 - Kubernetes in Action中文版：深入浅出，值得一读
+
+还有，欢迎一起交流：
+
+<div align=center><img width="300px" height="300px" src="https://gitee.com/howie6879/oss/raw/master/uPic/qrcode_for_gh_3f02ace79dfb_258.jpg" /></div>
 
