@@ -5,8 +5,11 @@ metadata:
   labels:
     name: nginx
 spec:
+  shareProcessNamespace: true
   containers:
   - name: nginx
-    image: nginx:latest
-    ports:
-      - containerPort: 80
+    image: nginx
+  - name: shell
+    image: busybox
+    stdin: true
+    tty: true
