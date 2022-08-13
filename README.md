@@ -2,13 +2,11 @@
 
 > Kubernetes是云原生应用的基石
 
-![Kubernetes](https://gitee.com/howie6879/oss/raw/master/uPic/kubernetes-high-level-component-archtecture.jpg)
-
 ## 为什么学习k8s?
 
 `Kubernetes`大势已定，从最开始的容器编排、调度、到集群管理，其在不同的阶段处理不同的问题，并且都解决得非常棒，发展到现在甚至有**云原生应用操作系统**之称。
 
-我并不是为了学习怎么在`k8s`上部署和管理一个个应用，最近对机器学习低代码云研发平台的研究让我越来越感觉到`k8s`的潜力与吸引力（云原生）。很显然，我心目中的机器学习云研发平台应该是一个云原生应用，并且其生长于`k8s`（说不定后面都叫Kubernetes Native）。
+![Kubernetes](https://images-1252557999.file.myqcloud.com/uPic/kubernetes-high-level-component-archtecture.jpg)
 
 ## 目录
 
@@ -38,5 +36,5 @@
 
 还有，欢迎一起交流：
 
-<div align=center><img width="300px" height="300px" src="https://gitee.com/howie6879/oss/raw/master/uPic/qrcode_for_gh_3f02ace79dfb_258.jpg" /></div>
+<div align=center><img width="300px" height="300px" src="https://images-1252557999.file.myqcloud.com/uPic/AbJj2b.jpg" /></div>
 
