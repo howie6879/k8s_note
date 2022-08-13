@@ -1,10 +1,10 @@
 # k8s学习之路
 
-> Kubernetes是云原生应用的基石
-
 ## 为什么学习k8s?
 
-`Kubernetes`大势已定，从最开始的容器编排、调度、到集群管理，其在不同的阶段处理不同的问题，并且都解决得非常棒，发展到现在甚至有**云原生应用操作系统**之称。
+> Kubernetes是云原生应用的基石
+
+`Kubernetes`大势已定，同领域可以说没有一合之敌了，从最开始的容器编排、调度、到集群管理，其在不同的阶段处理不同的问题，并且都解决得非常棒，发展到现在甚至有**云原生应用操作系统**之称。
 
 ![Kubernetes](https://images-1252557999.file.myqcloud.com/uPic/kubernetes-high-level-component-archtecture.jpg)
 
